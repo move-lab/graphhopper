@@ -1,5 +1,5 @@
 #!/bin/bash
-(set -o igncr) 2>/dev/null && set -o igncr; # this comment is required for handling Windows cr/lf 
+(set -o igncr) 2>/dev/null && set -o igncr; # this comment is required for handling Windows cr/lf
 # See StackOverflow answer http://stackoverflow.com/a/14607651
 
 GH_HOME=$(dirname "$0")
@@ -17,32 +17,38 @@ echo "## using java $vers from $JAVA_HOME"
 
 function printBashUsage {
   echo "Usage:"
-  echo "-a | --action <action>    must be one the following actions:"
-  echo "     --action import      creates the graph cache only, used for later faster starts"
-  echo "     --action web         starts a local server for user access at localhost:8989 and API access at localhost:8989/route"
-  echo "     --action build       creates the graphhopper web JAR"
-  echo "     --action clean       removes all JARs, necessary if you need to use the latest source (e.g. after switching the branch etc)"
-  echo "     --action measurement does performance analysis of the current source version via random routes (Measurement class)"
-  echo "     --action torture     can be used to test real world routes via feeding graphhopper logs into a GraphHopper system (Torture class)"
-  echo "-c | --config <config>    specify the application configuration"
-  echo "-d | --run-background     run the application in background (detach)"
-  echo "-fd| --force-download     force the download of the OSM data file if needed"
-  echo "-h | --help               display this message"
-  echo "--host <host>             specify to which host the service should be bound"
-  echo "-i | --input <file>       path to the input map file or name of the file to download"
-  echo "--jar <file>              specify the jar file (useful if you want to reuse this script for custom builds)"
-  echo "-o | --graph-cache <dir>  directory for graph cache output"
-  echo "-p | --profiles <string>  comma separated list of vehicle profiles"
-  echo "--port <port>             start web server at specific port"
-  echo "-v | --version            print version"
+  echo "-a | --action <action>            must be one the following actions:"
+  echo "     --action import              creates the graph cache only, used for later faster starts"
+  echo "     --action web                 starts a local server for user access at localhost:8989 and API access at localhost:8989/route"
+  echo "     --action build               creates the graphhopper web JAR"
+  echo "     --action clean               removes all JARs, necessary if you need to use the latest source (e.g. after switching the branch etc)"
+  echo "     --action measurement         does performance analysis of the current source version via random routes (Measurement class)"
+  echo "     --action torture             can be used to test real world routes via feeding graphhopper logs into a GraphHopper system (Torture class)"
+  echo "-c | --config <config>            specify the application configuration"
+  echo "-d | --run-background             run the application in background (detach)"
+  echo "-fd| --force-download             force the download of the OSM data file if needed"
+  echo "-pg | --prebuild-graph <dir>      use prebuild graph and skip building it from osm data"
+  echo "-dp | --download-prebuild <uri>   uri for downloading the .gz file with the prebuild graph"
+  echo "-dm | --download-method <s3|wget> method for how to get the graphdata (default: s3)"
+  echo "-h | --help                       display this message"
+  echo "--host <host>                     specify to which host the service should be bound"
+  echo "-i | --input <file>               path to the input map file or name of the file to download"
+  echo "--jar <file>                      specify the jar file (useful if you want to reuse this script for custom builds)"
+  echo "-o | --graph-cache <dir>          directory for graph cache output"
+  echo "-p | --profiles <string>          comma separated list of vehicle profiles"
+  echo "--port <port>                     start web server at specific port"
+  echo "-v | --version                    print version"
 }
 
 VERSION=$(grep "<name>" -A 1 pom.xml | grep version | cut -d'>' -f2 | cut -d'<' -f1)
 
 # one or two character parameters have one minus character'-' all longer parameters have two minus characters '--'
-while [ ! -z $1 ]; do
+while [ ! -z "$1" ]; do
   case $1 in
     -a|--action) ACTION=$2; shift 2;;
+    -pg|--prebuild-graph) GRAPH_PATH="$2"; shift 2;;
+    -dp|--download-prebuild) GRAPH_URI="$2"; shift 2;;
+    -dm|--download-method) DOWNLOAD_METHOD="$2"; shift 2;;
     -c|--config) CONFIG="$2"; shift 2;;
     -d|--run-background) RUN_BACKGROUND=true; shift 1;;
     -fd|--force-download) FORCE_DWN=1; shift 1;;
@@ -77,6 +83,11 @@ if [ -z $ACTION ]; then
   ACTION=${REMAINING_ARGS[0]}
 fi
 
+if [ -z $DOWNLOAD_METHOD ] && [[ "$GRAPH_URI" != "" ]]; then
+  echo "## no download-method defined. Setting it to S3"
+  DOWNLOAD_METHOD="s3"
+fi
+
 if [ -z $FILE ]; then
   FILE=${REMAINING_ARGS[1]}
 fi
@@ -97,7 +108,7 @@ if [ ! -f "config.yml" ]; then
   cp config-example.yml $CONFIG
 fi
 
-function ensureOsm { 
+function ensureOsm {
   if [ "$OSM_FILE" = "" ]; then
     # skip
     return
@@ -109,7 +120,7 @@ function ensureOsm {
     fi
 
     echo "## now downloading OSM file from $LINK and extracting to $OSM_FILE"
-    
+
     if [ ${OSM_FILE: -4} == ".pbf" ]; then
        wget -S -nv -O "$OSM_FILE" "$LINK"
     elif [ ${OSM_FILE: -4} == ".ghz" ]; then
@@ -121,7 +132,7 @@ function ensureOsm {
        wget -S -nv -O - "$LINK" | bzip2 -d > $TMP_OSM
        mv $TMP_OSM "$OSM_FILE"
     fi
-  
+
     if [[ ! -s "$OSM_FILE" ]]; then
       echo "ERROR couldn't download or extract OSM file $OSM_FILE ... exiting"
       exit
@@ -172,6 +183,21 @@ function packageJar {
   fi
 }
 
+function getPrebuildGraph {
+  if [ "$DOWNLOAD_METHOD" = "s3" ]; then
+    echo "## downloading graphdata from s3 bucket"
+    aws s3 cp $GRAPH_URI /data/graphdata.gz
+  elif [ "$DOWNLOAD_METHOD" = "wget" ]; then
+    echo "## downloading graphdata via wget"
+    wget -S -nv -O "/data/graphdata.gz" "$GRAPH_URI"
+  fi
+  echo "## unzipping graphdata"
+  mkdir /data/graphdata
+  tar -zxvf /data/graphdata.gz -C /data/graphdata
+  echo "## Content of /data/graphdata dir"
+  echo $(ls /data/graphdata -la)
+}
+
 ensureMaven
 
 ## now handle actions which do not take an OSM file
@@ -183,11 +209,11 @@ if [ "$ACTION" = "clean" ]; then
 
 elif [ "$ACTION" = "build" ]; then
  packageJar
- exit  
+ exit
 fi
- 
-if [ "$FILE" = "" ]; then
-  echo -e "no file specified?"
+
+if [ "$FILE" = "" ] && [ -z $GRAPH_PATH ] ; then
+  echo -e "no file & no prebuild graph specified?"
   printBashUsage
   exit
 fi
@@ -223,7 +249,7 @@ fi
 LINK=$(echo $NAME | tr '_' '/')
 if [ "$FILE" == "-" ]; then
    LINK=
-elif [ ${FILE: -4} == ".osm" ]; then 
+elif [ ${FILE: -4} == ".osm" ]; then
    LINK="http://download.geofabrik.de/$LINK-latest.osm.bz2"
 elif [ ${FILE: -4} == ".ghz" ]; then
    LINK="https://graphhopper.com/public/maps/0.1/$FILE"
@@ -238,17 +264,29 @@ fi
 : "${JAR:=web/target/graphhopper-web-$VERSION.jar}"
 : "${GRAPH:=$DATADIR/$NAME-gh}"
 
-ensureOsm
+# only check osm if no prebuild graph is used
+if [ -z $GRAPH_PATH ]; then
+  ensureOsm
+fi
+
+# download prebuild graph is specified
+if [[ "$GRAPH_URI" != "" ]]; then
+  getPrebuildGraph
+fi
+
 packageJar
 
 echo "## now $ACTION. JAVA_OPTS=$JAVA_OPTS"
 
 if [[ "$ACTION" = "web" ]]; then
   export MAVEN_OPTS="$MAVEN_OPTS $JAVA_OPTS"
-  if [[ "$RUN_BACKGROUND" == "true" ]]; then
+  if [[ "$GRAPH_PATH" != "" ]]; then
+    exec "$JAVA" $JAVA_OPTS -Dgraphhopper.graph.location="$GRAPH_PATH" \
+                 $GH_WEB_OPTS -jar "$JAR" server $CONFIG
+  elif [[ "$RUN_BACKGROUND" == "true" ]]; then
     exec "$JAVA" $JAVA_OPTS -Dgraphhopper.datareader.file="$OSM_FILE" -Dgraphhopper.graph.location="$GRAPH" \
                  $GH_WEB_OPTS -jar "$JAR" server $CONFIG <&- &
-    
+
     if [[ "$GH_PID_FILE" != "" ]]; then
        echo $! > $GH_PID_FILE
     fi
@@ -282,11 +320,11 @@ elif [ "$ACTION" = "measurement" ]; then
     "$JAVA" $JAVA_OPTS -cp "$JAR" com.graphhopper.tools.Measurement $ARGS measurement.count=$COUNT measurement.location="$M_FILE_NAME" \
             measurement.gitinfo="$commit_info"
  }
- 
- 
+
+
  # use all <last_commits> versions starting from HEAD
  last_commits=$3
-  
+
  if [ "$last_commits" = "" ]; then
    startMeasurement
    exit
@@ -299,7 +337,7 @@ elif [ "$ACTION" = "measurement" ]; then
    M_FILE_NAME=$(git log -n 1 --pretty=oneline | grep -o "\ .*" |  tr " ,;" "_")
    M_FILE_NAME="measurement$M_FILE_NAME.properties"
    echo -e "\nusing commit $commit and $M_FILE_NAME"
-   
+
    startMeasurement
    echo -e "\nmeasurement.commit=$commit\n" >> "$M_FILE_NAME"
  done

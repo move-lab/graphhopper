@@ -14,7 +14,7 @@ args:
   - "-pg"
   - "/data/graphdata/graphdata_b_hh_lndn_dnmrk.osm-gh"
   - "-dp"
-  - "s3://lab-graphhopper-graphdata/graphdata_b_hh_lndn_dnmrk.gz"
+  - "s3://lab-graphhopper-graphdata-prod/graphdata_b_hh_lndn_dnmrk.gz"
 ports:
   - 8989
 ingress:

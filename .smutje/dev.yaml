@@ -19,8 +19,5 @@ ports:
   - 8989
 ingress:
   hosts:
-    - host: 'api-graphhopper.{{ env "bamboo_deploy_host" }}'
+    - host: 'api-graphhopper-{{ env "bamboo_deploy_environment" }}.{{ env "bamboo_deploy_host" }}'
       public: false
-autoscaling:
-  min: 2
-  max: 3

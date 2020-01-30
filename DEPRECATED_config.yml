@@ -4,17 +4,13 @@ graphhopper:
 
   ##### Vehicles #####
 
-  # More options: foot,bike,bike2,mtb,racingbike,motorcycle (comma separated)
-  # bike2 takes elevation data into account (like up-hill is slower than down-hill) and requires enabling graph.elevation.provider below.
-  graph.flag_encoders: car
+  # Possible options: car,foot,bike,bike2,mtb,racingbike,motorcycle (comma separated)
+  # bike2 takes elevation data into account (like up-hill is slower than down-hill) and requires enabling graph.elevation.provider below
+  graph.flag_encoders: foot,bike,car
 
   # Enable turn restrictions for car or motorcycle.
   # graph.flag_encoders: car|turn_costs=true
-
-  # Add additional information to every edge. Used for path details.
-  # If road_environment is added and elevation is enabled then also a tunnel and bridge interpolation is done, see #798.
-  # More options are: surface,max_width,max_height,max_weight,max_axle_load,max_length,hazmat,hazmat_tunnel,hazmat_water,toll,track_type
-  graph.encoded_values: road_class,road_class_link,road_environment,max_speed,road_access
+  graph.bytes_for_flags: 20
 
   ##### Elevation #####
 
@@ -32,24 +28,7 @@ graphhopper:
   # By default the speed mode with the 'fastest' weighting is used. Internally a graph preparation via
   # contraction hierarchies (CH) is done to speed routing up. This requires more RAM/disc space for holding the
   # graph but less for every request. You can also setup multiple weightings, by providing a comma separated list.
-  # To enable finite u-turn costs use something like fastest|u_turn_costs=30, where 30 are the u-turn costs in seconds
-  # (given as integer). Note that since the u-turn costs are given in seconds the weighting you use should also
-  # calculate the weight in seconds. The u-turn costs will only be applied for edge_based, see below.
   prepare.ch.weightings: fastest
-
-  # Turn costs can be enabled also for speed mode (contraction hierarchies), but this requires a special kind of graph
-  # preparation (which uses edge- instead of node-based graph traversal), which takes more time and memory than a
-  # node-based preparation. You can also perform both node- and edge-based preparation for the same vehicle. This will
-  # allow switching between faster node-based routing and slower edge-based routing which supports turn costs.
-  # Using the following option you can specify what kind of preparation shall be performed for the different vehicles.
-  # You can choose:
-  # 'off': there will be no edge-based preparation for any of the vehicles, you will not be able to use turn costs
-  #        with speed mode
-  # 'edge_or_node': use edge-based preparation for all vehicles with |turn_costs=true (see graph.flag_encoders) and
-  #                 node-based preparation for all others
-  # 'edge_and_node': use node-based preparation for all vehicles and additionally use edge-based preparation for all
-  #                  vehicles with |turn_costs=true
-  prepare.ch.edge_based: off
 
   # Disable the speed mode. Should be used only with routing.max_visited_nodes or when the hybrid mode is enabled instead
   # prepare.ch.weightings: no
@@ -77,10 +56,10 @@ graphhopper:
   # connection between two points within the given visited nodes. The default is Integer.MAX_VALUE. Useful for flexibility mode
   # routing.max_visited_nodes: 1000000
 
-  # If enabled, allows a user to run flexibility requests even if speed mode is enabled. Every request then has to include a hint ch.disable=true.
+  # If enabled, allows a user to run flexibility requests even if speed mode is enabled. Every request then has to include a hint routing.ch.disable=true.
   # Attention, non-CH route calculations take way more time and resources, compared to CH routing.
   # A possible attacker might exploit this to slow down your service. Only enable it if you need it and with routing.maxVisitedNodes
-  # routing.ch.disabling_allowed: true
+  routing.ch.disabling_allowed: true
 
   # If enabled, allows a user to run flexible mode requests even if the hybrid mode is enabled. Every such request then has to include a hint routing.lm.disable=true.
   # routing.lm.disabling_allowed: true
@@ -104,8 +83,8 @@ graphhopper:
   ##### Spatial Rules #####
   # Spatial Rules require some configuration and only work with the DataFlagEncoder.
   # Spatial Rules require you to provide Polygons in which the rules are enforced
-  # The line below contains the default location for the files which define these borders
-  # spatial_rules.borders_directory: core/files/spatialrules
+  # The line below contains the default location for these rules
+  # spatial_rules.location: core/files/spatialrules/countries.geo.json
   # You can define the maximum BBox for which spatial rules are loaded.
   # You might want to do this if you are only importing a small area and don't need rules for other countries.
   # Having less rules, might result in a smaller graph. The line below contains the world-wide bounding box, uncomment and adapt to your need.
@@ -132,17 +111,3 @@ server:
     - type: http
       port: 8990
       bindHost: localhost
-# See https://www.dropwizard.io/1.3.8/docs/manual/configuration.html#logging
-logging:
-  appenders:
-    - type: file
-      timeZone: UTC
-      currentLogFilename: logs/graphhopper.log
-      logFormat: "%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-      archive: true
-      archivedLogFilenamePattern: ./logs/graphhopper-%d.log.gz
-      archivedFileCount: 30
-      neverBlock: true
-    - type: console
-      timeZone: UTC
-      logFormat: "%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

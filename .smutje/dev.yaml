@@ -10,9 +10,17 @@ health:
   delayseconds: 0
   path: "/"
   port: 8989
+args:
+  - "-pg"
+  - "/data/graphdata/graphdata_b_hh_lndn_dnmrk.osm-gh"
+  - "-dp"
+  - "s3://lab-graphhopper-graphdata/graphdata_b_hh_lndn_dnmrk.gz"
 ports:
   - 8989
 ingress:
   hosts:
     - host: 'graphhopper.api.{{ env "bamboo_dev_host" }}'
       public: false
+autoscaling:
+  min: 2
+  max: 3

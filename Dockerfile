@@ -1,6 +1,6 @@
 FROM openjdk:8-jdk
 
-ENV JAVA_OPTS "-server -Xconcurrentio -Xmx8g -Xms8g -XX:+UseG1GC -Ddw.server.applicationConnectors[0].bindHost=0.0.0.0 -Ddw.server.applicationConnectors[0].port=8989"
+ENV JAVA_OPTS "-server -Xconcurrentio -Xmx8G -Xms8G -XX:+UseG1GC -Ddw.server.applicationConnectors[0].bindHost=0.0.0.0 -Ddw.server.applicationConnectors[0].port=8989"
 
 RUN mkdir -p /data && mkdir -p /graphhopper
 

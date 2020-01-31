@@ -12,9 +12,9 @@ health:
   port: 8989
 args:
   - "-pg"
-  - "/data/graphdata/graphdata_b_hh_lndn_dnmrk.osm-gh"
+  - "/data/graphdata/b_hh_lndn_dnmrk_merged-gh"
   - "-dp"
-  - "s3://lab-graphhopper-graphdata-prod/graphdata_b_hh_lndn_dnmrk.gz"
+  - "s3://lab-graphhopper-graphdata-prod/b_hh_lndn_dnmrk_merged.gz"
 ports:
   - 8989
 ingress:

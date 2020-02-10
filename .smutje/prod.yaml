@@ -23,4 +23,4 @@ ingress:
       public: true
 autoscaling:
   min: 2
-  max: 3
+  max: 2

@@ -17,6 +17,8 @@ args:
   - "s3://lab-graphhopper-graphdata-prod/b_hh_lndn_dnmrk_merged.gz"
 ports:
   - 8989
+limits:
+  memory: 8192
 ingress:
   hosts:
     - host: 'api-graphhopper-{{ env "bamboo_deploy_environment" }}.{{ env "bamboo_deploy_host" }}'

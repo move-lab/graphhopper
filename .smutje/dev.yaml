@@ -12,11 +12,14 @@ health:
   port: 8989
 args:
   - "-pg"
-  - "/data/graphdata/graphdata_b_hh_lndn_dnmrk.osm-gh"
+  - "/data/graphdata/england_denmark_germany_merged-gh"
   - "-dp"
-  - "s3://lab-graphhopper-graphdata-prod/graphdata_b_hh_lndn_dnmrk.gz"
+  - "s3://lab-graphhopper-graphdata-prod/england_denmark_germany_merged-gh.gz"
 ports:
   - 8989
+limits:
+  cpu: 2
+  memory: 8192
 ingress:
   hosts:
     - host: 'api-graphhopper-{{ env "bamboo_deploy_environment" }}.{{ env "bamboo_deploy_host" }}'

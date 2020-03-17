@@ -19,7 +19,7 @@ ports:
   - 8989
 limits:
   cpu: 2
-  memory: 18432
+  memory: 24576
 ingress:
   hosts:
     - host: 'api-graphhopper-{{ env "bamboo_deploy_environment" }}.{{ env "bamboo_deploy_host" }}'

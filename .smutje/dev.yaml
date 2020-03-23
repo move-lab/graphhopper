@@ -7,7 +7,7 @@ service:
 deployment:
   strategy: blueGreen
 health:
-  delayseconds: 240
+  delayseconds: 720
   path: "/"
   port: 8989
 args:
